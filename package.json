@@ -1,0 +1,16 @@
+{
+  "name": "heroes-rest-api",
+  "version": "1.0.0",
+  "description": "REST API for \"Heroes of Might and Magic III\" game",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Krzysztof Charlikowski",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "mysql": "^2.18.1"
+  }
+}
