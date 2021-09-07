@@ -1,5 +1,6 @@
 const port = 3000;
-
+// import {express} from 'express'
+// import {cors} from 'cors'
 const express = require('express')
 const cors = require('cors')
 const castlesApp = require('./api/castles')
@@ -12,6 +13,8 @@ const unitsApp = require('./api/units')
 
 const app = express()
 app.use(cors())
+app.use(express.urlencoded({ extended: true }))
+app.use(express.json());
 
 app.use('/castles', castlesApp)
 app.use('/buildings', buildingsApp)

@@ -1,7 +1,8 @@
-const { con } = require('../database/db-connector')
-
 express = require('express')
-db = require('../database/db-connector')
+const Building = require('../classes/buidling')
+const db = require('../database/db-connector')
+const con = db.con
+const insert = db.insert
 appBuildings = express()
 
 appBuildings.route('/').get((req, res) => {
@@ -9,7 +10,15 @@ appBuildings.route('/').get((req, res) => {
 })
 
 appBuildings.route('/').post((req, res) => {
-    res.send(`POST Buildings data for Building`)
+    let building = new Building(req.body)
+    try {
+        insert('building', [building])
+        res.json(building)
+    } catch (e) {
+        console.error(e)
+        res.json('There was an error')
+    }
+    console.log(building)
 })
 
 appBuildings.route('/:bid').put((req, res) => {
