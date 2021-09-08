@@ -1,12 +1,15 @@
 express = require('express')
 const Building = require('../classes/buidling')
 const db = require('../database/db-connector')
-const con = db.con
 const insert = db.insert
+const select = db.select
 appBuildings = express()
 
 appBuildings.route('/').get((req, res) => {
-    res.send("Buildings data")
+    req.params
+    res.status(200)
+    select('building', new Building())
+    res.send('OK')
 })
 
 appBuildings.route('/').post((req, res) => {
@@ -18,7 +21,6 @@ appBuildings.route('/').post((req, res) => {
         console.error(e)
         res.json('There was an error')
     }
-    console.log(building)
 })
 
 appBuildings.route('/:bid').put((req, res) => {

@@ -22,12 +22,11 @@ CREATE OR REPLACE TABLE cost(
     gems INTEGER
 );
 CREATE OR REPLACE TABLE unit(
-    name VARCHAR(30) CHARACTER SET utf8 NOT NULL,
+    name VARCHAR(30) CHARACTER SET utf8 NOT NULL PRIMARY KEY,
     castle_name VARCHAR(30) CHARACTER SET utf8,
     level INTEGER,
     upgraded BOOLEAN,
     cost_id INTEGER,
-    PRIMARY KEY (name, castle_name),
     CONSTRAINT unit_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name),
     CONSTRAINT unit_fk_cost FOREIGN KEY (cost_id) REFERENCES cost (id)
 );
@@ -36,11 +35,10 @@ CREATE OR REPLACE TABLE maps(
     size VARCHAR(5)
 );
 CREATE OR REPLACE TABLE building(
-    name VARCHAR(30) CHARACTER SET utf8 NOT NULL,
+    name VARCHAR(30) CHARACTER SET utf8 NOT NULL PRIMARY KEY,
     castle_name VARCHAR(30) CHARACTER SET utf8,
     unit_level INTEGER,
     cost_id INTEGER,
-    PRIMARY KEY (name, castle_name),
     CONSTRAINT building_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name),
     CONSTRAINT building_fk_cost FOREIGN KEY (cost_id) REFERENCES cost (id)
 );
@@ -60,7 +58,6 @@ CREATE OR REPLACE TABLE game_player(
     CONSTRAINT game_player_game_fk FOREIGN KEY (game_id) REFERENCES game (id),
     CONSTRAINT game_player_player_fk FOREIGN KEY (player_name) REFERENCES player (name)
 );
-
 DELIMITER //
 CREATE OR REPLACE FUNCTION set_cost(goldIn INTEGER,
                          woodIn INTEGER,
@@ -111,3 +108,6 @@ INSERT INTO unit(castle_name, name, level, upgraded, cost_id) VALUES
  ('Bastion', 'Drzewiec', '5', false, set_cost(350,0,0,0,0,0,0)),('Bastion', 'Ent', '5', true, set_cost(425,0,0,0,0,0,0)),
  ('Bastion', 'Jednorożec', '6', false, set_cost(850,0,0,0,0,0,0)),('Bastion', 'Jednorożec bitewny', '6', true, set_cost(950,0,0,0,0,0,0)),
  ('Bastion', 'Zielony smok', '7', false, set_cost(2400,0,0,0,0,1,0)),('Bastion', 'Złoty smok', '7', true, set_cost(4000,0,0,0,0,2,0));
+
+-- Ciekawe query do porównania cen jednostek między Zamekiem a Bastionem, działa ale trzeba pamiętać o zmianie nazwy kolumn, bo inaczej się psuje
+SELECT u.name AS 'castle unit', c.gold AS 'castle cost', n.name AS 'bastion unit', o.gold AS 'bastion cost', (c.gold - o.gold) AS diff, u.level, u.upgraded FROM unit u join (cost c,unit n,cost o) ON (u.cost_id = c.id AND n.cost_id = o.id AND u.level = n.level AND u.name != n.name AND u.castle_name != n.castle_name AND u.upgraded = n.upgraded) WHERE u.castle_name = 'Zamek' ORDER BY u.level, u.upgraded;

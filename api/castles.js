@@ -1,4 +1,8 @@
 express = require('express')
+const Castle = require('../classes/castle')
+const db = require('../database/db-connector')
+const insert = db.insert
+const select = db.select
 appCastles = express()
 
 appCastles.route('/').get((req, res) => {
@@ -6,7 +10,14 @@ appCastles.route('/').get((req, res) => {
 })
 
 appCastles.route('/').post((req, res) => {
-    res.send(`POST Castles data for castle`)
+    let castle = new Castle(req.body)
+    try {
+        insert('castle', [castle])
+        res.json(castle)
+    } catch (e) {
+        console.error(e)
+        res.json('There was an error')
+    }
 })
 
 appCastles.route('/:cid').put((req, res) => {

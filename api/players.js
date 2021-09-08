@@ -1,4 +1,8 @@
 express = require('express')
+const Player = require('../classes/player')
+const db = require('../database/db-connector')
+const insert = db.insert
+const select = db.select
 appPlayers = express()
 
 appPlayers.route('/').get((req, res) => {
@@ -6,7 +10,14 @@ appPlayers.route('/').get((req, res) => {
 })
 
 appPlayers.route('/').post((req, res) => {
-    res.send(`POST Players data for Player`)
+    let player = new Player(req.body)
+    try {
+        insert('player', [player])
+        res.json(player)
+    } catch (e) {
+        console.error(e)
+        res.json('There was an error')
+    }
 })
 
 appPlayers.route('/:pid').put((req, res) => {

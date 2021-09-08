@@ -12,7 +12,7 @@ class Unit {
         level = 0,
         upgraded = false,
         cost = new Cost()
-    }) {
+    }={}) {
         this.name = name
         this.castle_name = castle_name
         this.level = level
