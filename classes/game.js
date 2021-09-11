@@ -1,6 +1,6 @@
 class Game {
     id
-    constructor({id = ''}) {
+    constructor({id = ''} = {}) {
         this.id = id
     }
 }

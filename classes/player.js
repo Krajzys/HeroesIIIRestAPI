@@ -1,6 +1,6 @@
 class Player {
     name
-    constructor({name = ''}) {
+    constructor({name = ''} = {}) {
         this.name = name
     }
 }

@@ -1,6 +1,6 @@
 class Castle {
     name
-    constructor({name = ''}) {
+    constructor({name = ''} = {}) {
         this.name = name
     }
 }
