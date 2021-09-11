@@ -1,19 +1,18 @@
 express = require('express')
 const Token = require('../classes/token')
 const db = require('../database/db-connector')
-const insert = db.insert
-const select = db.select
+const insert_token = db.insert_token
 appTokens = express()
 
 appTokens.route('/').post((req, res) => {
     let token = new Token({"token": createToken()})
-    try {
-        insert('token', [token])
-        res.json(token)
-    } catch (e) {
-        console.error(e)
-        res.json('There was an error')
-    }
+    insert_token([token]).then((rows) => {
+        res.status(200)
+        res.send(token)
+    }).catch((err)=> {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 function createToken() {

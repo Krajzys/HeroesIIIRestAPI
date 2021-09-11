@@ -1,23 +1,29 @@
 express = require('express')
 const Map = require('../classes/map')
 const db = require('../database/db-connector')
-const insert = db.insert
-const select = db.select
+const insert_map = db.insert_map
+const select_map = db.select_map
 appMaps = express()
 
 appMaps.route('/').get((req, res) => {
-    res.send("Maps data")
+    select_map().then((rows) => {
+        res.status(200)
+        res.send(rows)
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 appMaps.route('/').post((req, res) => {
     let map = new Map(req.body)
-    try {
-        insert('map', [map])
-        res.json(map)
-    } catch (e) {
-        console.error(e)
-        res.json('There was an error')
-    }
+    insert_map([map]).then((rows) => {
+        res.status(200)
+        res.send(map)
+    }).catch((err)=> {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 appMaps.route('/:mip').put((req, res) => {

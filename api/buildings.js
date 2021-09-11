@@ -1,26 +1,29 @@
 express = require('express')
 const Building = require('../classes/buidling')
 const db = require('../database/db-connector')
-const insert = db.insert
-const select = db.select
+const insert_building = db.insert_building
+const select_building = db.select_building
 appBuildings = express()
 
 appBuildings.route('/').get((req, res) => {
-    req.params
-    res.status(200)
-    select('building', new Building())
-    res.send('OK')
+    select_building().then((rows) => {
+        res.status(200)
+        res.send(rows)
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 appBuildings.route('/').post((req, res) => {
     let building = new Building(req.body)
-    try {
-        insert('building', [building])
-        res.json(building)
-    } catch (e) {
-        console.error(e)
-        res.json('There was an error')
-    }
+    insert_building([building]).then((rows) => {
+        res.status(200)
+        res.send(building)
+    }).catch((err)=> {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 appBuildings.route('/:bid').put((req, res) => {

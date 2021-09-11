@@ -1,23 +1,29 @@
 express = require('express')
 const Game = require('../classes/game')
 const db = require('../database/db-connector')
-const insert = db.insert
-const select = db.select
+const insert_game = db.insert_game
+const select_game = db.select_game
 appGames = express()
 
 appGames.route('/').get((req, res) => {
-    res.send("Games data")
+    select_game().then((rows) => {
+        res.status(200)
+        res.send(rows)
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 appGames.route('/').post((req, res) => {
     let game = new Game(req.body)
-    try {
-        insert('game', [game])
-        res.json(game)
-    } catch (e) {
-        console.error(e)
-        res.json('There was an error')
-    }
+    insert_game([game]).then((rows) => {
+        res.status(200)
+        res.send(game)
+    }).catch((err)=> {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 appGames.route('/:gid').put((req, res) => {
