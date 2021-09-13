@@ -49,15 +49,15 @@ CREATE OR REPLACE TABLE requirement(
     castle_name VARCHAR(30) CHARACTER SET utf8 NOT NULL,
     requirement_name VARCHAR(30) CHARACTER SET utf8 NOT NULL,
     PRIMARY KEY (building_name, castle_name, requirement_name),
-    CONSTRAINT requirement_fk_building FOREIGN KEY (building_name) REFERENCES building (name),
-    CONSTRAINT requirement_fk_building_2 FOREIGN KEY (requirement_name) REFERENCES building (name),
-    CONSTRAINT requirement_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name)
+    CONSTRAINT requirement_fk_building FOREIGN KEY (building_name) REFERENCES building (name) ON DELETE CASCADE,
+    CONSTRAINT requirement_fk_building_2 FOREIGN KEY (requirement_name) REFERENCES building (name) ON DELETE CASCADE,
+    CONSTRAINT requirement_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name) ON DELETE CASCADE
 );
 -- TODO: dodać castle_name do graczaa
 -- TODO: dodać tabelkę pomocniczą player_unit (wiążę gracza z jego jednostakami)
 -- TODO: dodać tabelkę pomocniczą player_building (wiążę gracza z jego budynkami)
 CREATE OR REPLACE TABLE player(
-    name VARCHAR(30) CHARACTER SET utf8 NOT NULL PRIMARY KEY,
+    name VARCHAR(30) CHARACTER SET utf8 NOT NULL PRIMARY KEY
 );
 CREATE OR REPLACE TABLE token(
     token CHAR(20) NOT NULL PRIMARY KEY

@@ -3,6 +3,7 @@ const Castle = require('../classes/castle')
 const db = require('../database/db-connector')
 const insert_castle = db.insert_castle
 const select_castle = db.select_castle
+const delete_castle = db.delete_castle
 appCastles = express()
 
 appCastles.route('/').get((req, res) => {
@@ -35,7 +36,21 @@ appCastles.route('/:cid').patch((req, res) => {
 })
 
 appCastles.route('/:cid').delete((req, res) => {
-    res.send(`DELETE Castles data for castle ${req.params.cid}`)
+    let castle = new Castle({
+        "name": req.params.cid
+    })
+    select_castle(castle).then((rows) => {
+        delete_castle(castle).then((_rows) => {
+            res.status(200)
+            res.send(rows)
+        }).catch((err) => {
+            res.status(500)
+            res.send(err.message)
+        })
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 module.exports = appCastles

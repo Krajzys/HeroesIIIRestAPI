@@ -3,6 +3,7 @@ const Map = require('../classes/map')
 const db = require('../database/db-connector')
 const insert_map = db.insert_map
 const select_map = db.select_map
+const delete_map = db.delete_map
 appMaps = express()
 
 appMaps.route('/').get((req, res) => {
@@ -26,16 +27,30 @@ appMaps.route('/').post((req, res) => {
     })
 })
 
-appMaps.route('/:mip').put((req, res) => {
-    res.send(`PUT Maps data for Map ${req.params.mip}`)
+appMaps.route('/:mid').put((req, res) => {
+    res.send(`PUT Maps data for Map ${req.params.mid}`)
 })
 
-appMaps.route('/:mip').patch((req, res) => {
-    res.send(`PATCH Maps data for Map ${req.params.mip}`)
+appMaps.route('/:mid').patch((req, res) => {
+    res.send(`PATCH Maps data for Map ${req.params.mid}`)
 })
 
-appMaps.route('/:mip').delete((req, res) => {
-    res.send(`DELETE Maps data for Map ${req.params.mip}`)
+appMaps.route('/:mid').delete((req, res) => {
+    let map = new Map({
+        "name": req.params.mid
+    })
+    select_map(map).then((rows) => {
+        delete_map(map).then((_rows) => {
+            res.status(200)
+            res.send(rows)
+        }).catch((err) => {
+            res.status(500)
+            res.send(err.message)
+        })
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 module.exports = appMaps

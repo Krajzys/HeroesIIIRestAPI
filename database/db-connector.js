@@ -28,18 +28,45 @@ function insert_building(values) {
     let valuesList = ''
     var valuesAsList = []
     
-    valuesList = '(name,castle_name,unit_level,cost_id)'
+    valuesList = '(name,castle_name,level,cost_id)'
     values.forEach(element => {
         const SET_COST = { toSqlString: function() { return `set_cost(${element.cost.gold},${element.cost.wood},${element.cost.ore},${element.cost.mercury},${element.cost.sulfur},${element.cost.crystal},${element.cost.gems})`; } };
         valuesAsList.push([element.name, element.castle_name, element.unit_level, SET_COST])
     })
 
+    let queryString2 = `INSERT INTO requirement (building_name,castle_name,requirement_name) VALUES ?`;
+    let valuesAsList2 = []
+    
+    values.forEach(element => {
+        if (element.requirements.length !== 0) {
+            element.requirements.forEach(requirement => {
+                valuesAsList2.push([element.name, element.castle_name, requirement])
+            })
+        }
+    })
+
     let queryString = `INSERT INTO building ${valuesList} VALUES ?`;
 
     return new Promise(function(resolve, reject) {
-            con.query(queryString, [valuesAsList], function (err, result, fields) {
-            if (err) reject(err)
-            resolve (result)
+        con.query(queryString, [valuesAsList], function (err, result, fields) {
+            if (err) {
+                reject(err)
+            } else {
+                if (valuesAsList2.length !== 0) {
+                    new Promise(function(_resolve, _reject) {
+                        if (valuesAsList2.length !== 0) {
+                            con.query(queryString2, [valuesAsList2], function (err, result, fields) {
+                                    if (err) {
+                                        reject (err)
+                                    }
+                                    resolve (result)
+                                })
+                            }
+                        })
+                } else {
+                    resolve (result)
+                }
+            }
         })
     })
 }
@@ -160,7 +187,7 @@ function insert_unit(values) {
 }
 
 function select_building(filters = new Building()) {
-    let queryString = `SELECT * FROM building JOIN cost ON (cost_id = id)`
+    let queryString = `SELECT b.name,b.castle_name,b.level,gold,wood,ore,mercury,sulfur,crystal,gems,GROUP_CONCAT(r.requirement_name) AS requirements FROM building b JOIN cost ON (cost_id = id) JOIN requirement r ON (name = building_name AND b.castle_name = r.castle_name) GROUP BY requirement_name`
     return new Promise (function(resolve, reject) {
             con.query(queryString, function (err, rows, fields) {
             if (err) reject(err)
@@ -222,12 +249,84 @@ function select_token(filters = new Token()) {
 function select_unit(filters = new Unit()) {
     let queryString = `SELECT * FROM unit JOIN cost ON (cost_id = id)`
     return new Promise (function(resolve, reject) {
-            con.query(queryString, function (err, rows, fields) {
+        con.query(queryString, function (err, rows, fields) {
             if (err) reject(err)
             resolve(rows)
         })
     })
 }
+
+function delete_building(buidling = new Building()) {
+    let queryString = `DELETE FROM building WHERE name = ? AND castle_name = ?`
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [buidling.name, buidling.castle_name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function delete_castle(castle = new Castle()) {
+    let queryString = `DELETE FROM castle WHERE name = ?`
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [castle.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function delete_game(game = new Game()) {
+    let queryString = `DELETE FROM game WHERE id = ?`
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [game.id], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function delete_map(map = new Map()) {
+    let queryString = `DELETE FROM map WHERE name = ?`
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [map.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function delete_player(player = new player()) {
+    let queryString = `DELETE FROM player WHERE name = ?`
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [player.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function delete_token(token = new Token()) {
+    let queryString = `DELETE FROM token WHERE token = ?`
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [token.token], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function delete_unit(unit = new Unit()) {
+    let queryString = `DELETE FROM unit WHERE name = ?`
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [unit.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+// TODO: Add PUT and PATCH(odata_etag) methods
 
 exports.con = con
 
@@ -246,3 +345,11 @@ exports.select_map = select_map
 exports.select_player = select_player
 exports.select_token = select_token
 exports.select_unit = select_unit
+
+exports.delete_building = delete_building
+exports.delete_castle = delete_castle
+exports.delete_game = delete_game
+exports.delete_map = delete_map
+exports.delete_player = delete_player
+exports.delete_token = delete_token
+exports.delete_unit = delete_unit

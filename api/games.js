@@ -3,6 +3,7 @@ const Game = require('../classes/game')
 const db = require('../database/db-connector')
 const insert_game = db.insert_game
 const select_game = db.select_game
+const delete_game = db.delete_game
 appGames = express()
 
 appGames.route('/').get((req, res) => {
@@ -35,7 +36,21 @@ appGames.route('/:gid').patch((req, res) => {
 })
 
 appGames.route('/:gid').delete((req, res) => {
-    res.send(`DELETE Games data for Game ${req.params.gid}`)
+    let game = new Game({
+        "id": req.params.gid
+    })
+    select_game(game).then((rows) => {
+        delete_game(game).then((_rows) => {
+            res.status(200)
+            res.send(rows)
+        }).catch((err) => {
+            res.status(500)
+            res.send(err.message)
+        })
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 module.exports = appGames

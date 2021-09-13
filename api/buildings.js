@@ -1,11 +1,13 @@
 express = require('express')
 const Building = require('../classes/buidling')
+const Cost = require('../classes/cost')
 const db = require('../database/db-connector')
 const insert_building = db.insert_building
 const select_building = db.select_building
+const delete_building = db.delete_building
 appBuildings = express()
 
-appBuildings.route('/').get((req, res) => {
+appBuildings.route('/:bid?&?:cid?').get((req, res) => {
     select_building().then((rows) => {
         res.status(200)
         res.send(rows)
@@ -26,16 +28,31 @@ appBuildings.route('/').post((req, res) => {
     })
 })
 
-appBuildings.route('/:bid').put((req, res) => {
-    res.send(`PUT Buildings data for Building ${req.params.bid}`)
+appBuildings.route('/:bid&:cid').put((req, res) => {
+    res.send(`PUT Buildings data for Building ${req.params.bid} ${req.params.cid}`)
 })
 
-appBuildings.route('/:bid').patch((req, res) => {
-    res.send(`PATCH Buildings data for Building ${req.params.bid}`)
+appBuildings.route('/:bid&:cid').patch((req, res) => {
+    res.send(`PATCH Buildings data for Building ${req.params.bid} ${req.params.cid}`)
 })
 
-appBuildings.route('/:bid').delete((req, res) => {
-    res.send(`DELETE Buildings data for Building ${req.params.bid}`)
+appBuildings.route('/:bid&:cid').delete((req, res) => {
+    let building = new Building({
+        "name": req.params.bid,
+        "castle_name": req.params.cid
+    })
+    select_building(building).then((rows) => {
+        delete_building(building).then((_rows) => {
+            res.status(200)
+            res.send(rows)
+        }).catch((err) => {
+            res.status(500)
+            res.send(err.message)
+        })
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 module.exports = appBuildings
