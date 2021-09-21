@@ -1,13 +1,28 @@
 express = require('express')
 const Game = require('../classes/game')
+const Token = require('../classes/token')
 const db = require('../database/db-connector')
 const insert_game = db.insert_game
 const select_game = db.select_game
 const delete_game = db.delete_game
+const update_game = db.update_game
+const delete_token = db.delete_token
+const extend = require('lodash/extend')
 appGames = express()
 
 appGames.route('/').get((req, res) => {
-    select_game().then((rows) => {
+    select_game(new Game(), req.query).then((rows) => {
+        res.status(200)
+        res.send(rows)
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
+})
+
+appGames.route('/:gid').get((req, res) => {
+    let game = new Game({id: req.params.gid})
+    select_game(game).then((rows) => {
         res.status(200)
         res.send(rows)
     }).catch((err) => {
@@ -17,22 +32,70 @@ appGames.route('/').get((req, res) => {
 })
 
 appGames.route('/').post((req, res) => {
-    let game = new Game(req.body)
-    insert_game([game]).then((rows) => {
+    let token = new Token(req.body)
+    delete_token(token).then((rows) => {
+        if (rows.affectedRows === 0) {
+            res.status(404)
+            res.send('Entered token is invalid')
+            return
+        }
+        insert_game([]).then((rows) => {
+            res.status(200)
+            let game = new Game({id: rows.insertId})
+            res.json(game)
+        }).catch((err)=> {
+            res.status(500)
+            res.send(err.message)
+        })
+    })
+})
+
+appGames.route('/:gid').put((req, res) => {
+    let {requirements, ...game} = new Game(req.body)
+    if (Object.getOwnPropertyNames(req.body) !== Object.getOwnPropertyNames(new Game())) {
+        res.status(400)
+        res.send('To perform full update (PUT request) you must specify all of the resource fields')
+        return
+    }
+    update_game(game).then((rows) => {
         res.status(200)
-        res.send(game)
+        res.send(rows)
     }).catch((err)=> {
         res.status(500)
         res.send(err.message)
     })
 })
 
-appGames.route('/:gid').put((req, res) => {
-    res.send(`PUT Games data for Game ${req.params.gid}`)
-})
-
 appGames.route('/:gid').patch((req, res) => {
-    res.send(`PATCH Games data for Game ${req.params.gid}`)
+    let update_properties = req.body
+    let game = new Game({id: req.params.gid})
+    select_game(game).then((rows) => {
+        if (rows.length > 0) {
+            let {last_date_modified, ...game} = rows[0]
+            let game_update = {}
+            Object.assign(game_update, game)
+            extend(game_update, update_properties)
+            update_game(game_update, game, true).then((rows) => {
+                if (rows.affectedRows === 0) {
+                    res.status(404)
+                    res.send('You must specify latest last_date_modified inside your request body.')
+                    return
+                }
+                res.status(200)
+                res.send(rows)
+            }).catch((err)=> {
+                res.status(500)
+                res.send(err.message)
+            })
+        }
+        else {
+            res.status(404)
+            res.send('Requested resource cannot be found')
+        }
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
 })
 
 appGames.route('/:gid').delete((req, res) => {

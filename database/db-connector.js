@@ -1,10 +1,8 @@
 const mysql = require('mysql')
 
-// const { table } = require('console')
-// const { resolve } = require('path')
-
-const Building = require('../classes/buidling')
+const Building = require('../classes/building')
 const Castle = require('../classes/castle')
+const Cost = require('../classes/cost')
 const Game = require('../classes/game')
 const Map = require('../classes/map')
 const Player = require('../classes/player')
@@ -16,13 +14,17 @@ var con = mysql.createConnection({
     user: "root",
     password: "secretpassword01",
     database: "datadb",
-    port: 3420
+    port: 3306
 })
 
 con.connect(function(err) {
     if (err) throw err
     console.log('Connected!')
 })
+
+function to_maria_db_timestamp(date = new Date()) {
+    return date.toLocaleString().replace(/\./g, '-').replace(/, /g, 'T')
+}
 
 function insert_building(values) {
     let valuesList = ''
@@ -94,12 +96,12 @@ function insert_game(values) {
     let valuesList = ''
     var valuesAsList = []
 
-    valuesList = '(id)'
+    valuesList = '(name)'
     values.forEach(element => {
-        valuesAsList.push([element.id])
+        valuesAsList.push([element.name])
     })
     
-    let queryString = `INSERT INTO gane ${valuesList} VALUES ?`;
+    let queryString = `INSERT INTO game ${valuesList} VALUES ?`;
 
     return new Promise(function(resolve, reject) {
             con.query(queryString, [valuesAsList], function (err, result, fields) {
@@ -186,58 +188,158 @@ function insert_unit(values) {
     })
 }
 
-function select_building(filters = new Building()) {
-    let queryString = `SELECT b.name,b.castle_name,b.level,gold,wood,ore,mercury,sulfur,crystal,gems,GROUP_CONCAT(r.requirement_name) AS requirements FROM building b JOIN cost ON (cost_id = id) JOIN requirement r ON (name = building_name AND b.castle_name = r.castle_name) GROUP BY requirement_name`
+function select_building(filters = new Building(), query = {}) {
+    let queryString = `SELECT b.name,b.castle_name,b.level,gold,wood,ore,mercury,sulfur,crystal,gems,GROUP_CONCAT(r.requirement_name) AS requirements,last_date_modified FROM building b LEFT JOIN cost ON (cost_id = id) LEFT JOIN requirement r ON (name = building_name AND b.castle_name = r.castle_name)`
+    if (filters.name !== '' && filters.castle_name !== '') {
+        queryString += ` WHERE b.name = '${filters.name}' AND b.castle_name = '${filters.castle_name}'`
+    }
+    queryString += ` GROUP BY name`
+    if (query.limit > 0) {
+        queryString += ` LIMIT ${query.limit}`
+    }
+    if (query.offset > 0) {
+        queryString += ` OFFSET ${query.offset}`
+    }
     return new Promise (function(resolve, reject) {
             con.query(queryString, function (err, rows, fields) {
             if (err) reject(err)
-            resolve(rows)
+            let new_rows = []
+            rows.forEach((element) => {
+                let new_building = new Building({
+                    name: element.name,
+                    castle_name: element.castle_name,
+                    level: element.level,
+                    requirements: element.requirements?.split(','),
+                    cost: new Cost({
+                        gold: element.gold,
+                        wood: element.wood,
+                        ore: element.ore,
+                        mercury: element.mercury,
+                        sulfur: element.sulfur,
+                        crystal: element.crystal,
+                        gems: element.gems
+                    }),
+                    last_date_modified: to_maria_db_timestamp(element.last_date_modified)
+                })
+                new_rows.push(new_building)
+            })
+            resolve(new_rows)
         })
     })
 }
 
-function select_castle(filters = new Castle()) {
+function select_castle(filters = new Castle(), query = {}) {
     let queryString = `SELECT * FROM castle`
+    if (filters.name !== '') {
+        queryString += ` WHERE name = '${filters.name}'`
+    }
+    if (query.limit > 0) {
+        queryString += ` LIMIT ${query.limit}`
+    }
+    if (query.offset > 0) {
+        queryString += ` OFFSET ${query.offset}`
+    }
     return new Promise (function(resolve, reject) {
             con.query(queryString, function (err, rows, fields) {
             if (err) reject(err)
-            resolve(rows)
+            let new_rows = []
+            rows.forEach((element) => {
+                let new_castle = new Castle({
+                    name: element.name,
+                    last_date_modified: to_maria_db_timestamp(element.last_date_modified)
+                })
+                new_rows.push(new_castle)
+            })
+            resolve(new_rows)
         })
     })
 }
 
-function select_game(filters = new Game()) {
+function select_game(filters = new Game(), query = {}) {
     let queryString = `SELECT * FROM game`
+    if (filters.id !== '') {
+        queryString += ` WHERE id = '${filters.id}'`
+    }
+    if (query.limit > 0) {
+        queryString += ` LIMIT ${query.limit}`
+    }
+    if (query.offset > 0) {
+        queryString += ` OFFSET ${query.offset}`
+    }
     return new Promise (function(resolve, reject) {
             con.query(queryString, function (err, rows, fields) {
             if (err) reject(err)
-            resolve(rows)
+            let new_rows = []
+            rows.forEach((element) => {
+                let new_game = new Game({
+                    id: element.id,
+                    last_date_modified: to_maria_db_timestamp(element.last_date_modified),
+                    name: element.name
+                })
+                new_rows.push(new_game)
+            })
+            resolve(new_rows)
         })
     })
 }
 
-function select_map(filters = new Map()) {
+function select_map(filters = new Map(), query = {}) {
     let queryString = `SELECT * FROM map`
+    if (filters.name !== '') {
+        queryString += ` WHERE name = '${filters.name}'`
+    }
+    if (query.limit > 0) {
+        queryString += ` LIMIT ${query.limit}`
+    }
+    if (query.offset > 0) {
+        queryString += ` OFFSET ${query.offset}`
+    }
     return new Promise (function(resolve, reject) {
             con.query(queryString, function (err, rows, fields) {
             if (err) reject(err)
-            resolve(rows)
+            let new_rows = []
+            rows.forEach((element) => {
+                let new_map = new Map({
+                    name: element.name,
+                    size: element.size,
+                    last_date_modified: to_maria_db_timestamp(element.last_date_modified)
+                })
+                new_rows.push(new_map)
+            })
+            resolve(new_rows)
         })
     })
 }
 
-function select_player(filters = new Player()) {
+function select_player(filters = new Player(), query = {}) {
     let queryString = `SELECT * FROM player`
+    if (filters.name !== '') {
+        queryString += ` WHERE name = '${filters.name}'`
+    }
+    if (query.limit > 0) {
+        queryString += ` LIMIT ${query.limit}`
+    }
+    if (query.offset > 0) {
+        queryString += ` OFFSET ${query.offset}`
+    }
     return new Promise (function(resolve, reject) {
             con.query(queryString, function (err, rows, fields) {
             if (err) reject(err)
-            resolve(rows)
+            let new_rows = []
+            rows.forEach((element) => {
+                let new_player = new Player({
+                    name: element.name,
+                    last_date_modified: to_maria_db_timestamp(element.last_date_modified)
+                })
+                new_rows.push(new_player)
+            })
+            resolve(new_rows)
         })
     })
 }
 
 function select_token(filters = new Token()) {
-    let queryString = `SELECT * FROM token`
+    let queryString = `SELECT * FROM token WHERE token = '${filters.token}'`
     return new Promise (function(resolve, reject) {
             con.query(queryString, function (err, rows, fields) {
             if (err) reject(err)
@@ -246,20 +348,49 @@ function select_token(filters = new Token()) {
     })
 }
 
-function select_unit(filters = new Unit()) {
+function select_unit(filters = new Unit(), query = {}) {
     let queryString = `SELECT * FROM unit JOIN cost ON (cost_id = id)`
+    if (filters.name !== '') {
+        queryString += ` WHERE name = '${filters.name}'`
+    }
+    if (query.limit > 0) {
+        queryString += ` LIMIT ${query.limit}`
+    }
+    if (query.offset > 0) {
+        queryString += ` OFFSET ${query.offset}`
+    }
     return new Promise (function(resolve, reject) {
         con.query(queryString, function (err, rows, fields) {
             if (err) reject(err)
-            resolve(rows)
+            let new_rows = []
+            rows.forEach((element) => {
+                let new_unit = new Unit({
+                    name: element.name,
+                    castle_name: element.castle_name,
+                    level: element.level,
+                    upgraded: element.upgraded,
+                    cost: new Cost({
+                        gold: element.gold,
+                        wood: element.wood,
+                        ore: element.ore,
+                        mercury: element.mercury,
+                        sulfur: element.sulfur,
+                        crystal: element.crystal,
+                        gems: element.gems
+                    }),
+                    last_date_modified: to_maria_db_timestamp(element.last_date_modified)
+                })
+                new_rows.push(new_unit)
+            })
+            resolve(new_rows)
         })
     })
 }
 
-function delete_building(buidling = new Building()) {
+function delete_building(building = new Building()) {
     let queryString = `DELETE FROM building WHERE name = ? AND castle_name = ?`
     return new Promise(function(resolve, reject) {
-        con.query(queryString, [buidling.name, buidling.castle_name], function(err, rows, fields) {
+        con.query(queryString, [building.name, building.castle_name], function(err, rows, fields) {
             if (err) reject(err)
             resolve(rows)
         })
@@ -326,7 +457,88 @@ function delete_unit(unit = new Unit()) {
     })
 }
 
-// TODO: Add PUT and PATCH(odata_etag) methods
+function update_building(building = new Building(), old_building = new Building(), with_date = false) {
+    const SET_COST = { toSqlString: function() { return `set_cost(${building.cost.gold},${building.cost.wood},${building.cost.ore},${building.cost.mercury},${building.cost.sulfur},${building.cost.crystal},${building.cost.gems})`; } };
+    let queryString = `UPDATE building SET name = ?, castle_name = ?, level = ?, cost_id = ? WHERE name = '${old_building.name}' AND castle_name = '${old_building.castle_name}'`
+    let valuesAsList = [building.name, building.castle_name, building.level, SET_COST]
+    const SET_TIMESTAMP = { toSqlString: function() { return `STR_TO_DATE('${building.last_date_modified}', '%d-%m-%YT%H:%i:%s')`} }
+    if (with_date) {
+        queryString += ` AND last_date_modified = ?`
+        valuesAsList.push(SET_TIMESTAMP)
+    }
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, valuesAsList, function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function update_castle(castle = new Castle(), old_castle = new Castle(), with_date = false) {
+    let queryString = `UPDATE castle SET name = ? WHERE name = '${old_castle.name}'`
+    if (with_date) {
+        queryString += ` AND last_date_modified = STR_TO_DATE('${castle.last_date_modified}', '%d-%m-%YT%H:%i:%s')`
+    }
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [castle.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function update_game(game = new Game(), old_game = new Game(), with_date = false) {
+    let queryString = `UPDATE game SET id = ?, name = ? WHERE id = '${old_game.id}'`
+    if (with_date) {
+        queryString += ` AND last_date_modified = STR_TO_DATE('${game.last_date_modified}', '%d-%m-%YT%H:%i:%s')`
+    }
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [game.id, game.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function update_map(map = new Map(), old_map = new Map(), with_date = false) {
+    let queryString = `UPDATE map SET size = ?, name = ? WHERE name = '${old_map.name}'`
+    if (with_date) {
+        queryString += ` AND last_date_modified = STR_TO_DATE('${map.last_date_modified}', '%d-%m-%YT%H:%i:%s')`
+    }
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [map.size, map.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function update_player(player = new Player(), old_player = new Player(), with_date = false) {
+    let queryString = `UPDATE player SET name = ? WHERE name = '${old_player.name}'`
+    if (with_date) {
+        queryString += ` AND last_date_modified = STR_TO_DATE('${player.last_date_modified}', '%d-%m-%YT%H:%i:%s')`
+    }
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [player.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function update_unit(unit = new Unit(), old_unit = new Unit(), with_date = false) {
+    const SET_COST = { toSqlString: function() { return `set_cost(${unit.cost.gold},${unit.cost.wood},${unit.cost.ore},${unit.cost.mercury},${unit.cost.sulfur},${unit.cost.crystal},${unit.cost.gems})`; } };
+    let queryString = `UPDATE unit SET name = ?, castle_name = ?, level = ?, upgraded = ?, cost_id = ? WHERE name = '${old_unit.name}'`
+    if (with_date) {
+        queryString += ` AND last_date_modified = STR_TO_DATE('${unit.last_date_modified}', '%d-%m-%YT%H:%i:%s')`
+    }
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [unit.name, unit.castle_name, unit.level, unit.upgraded, SET_COST], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
 
 exports.con = con
 
@@ -353,3 +565,10 @@ exports.delete_map = delete_map
 exports.delete_player = delete_player
 exports.delete_token = delete_token
 exports.delete_unit = delete_unit
+
+exports.update_building = update_building
+exports.update_castle = update_castle
+exports.update_game = update_game
+exports.update_map = update_map
+exports.update_player = update_player
+exports.update_unit = update_unit

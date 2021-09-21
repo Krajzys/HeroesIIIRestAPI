@@ -10,7 +10,8 @@ DROP TABLE IF EXISTS cost;
 DROP TABLE IF EXISTS castle;
 
 CREATE OR REPLACE TABLE castle(
-    name VARCHAR(30) CHARACTER SET utf8 NOT NULL PRIMARY KEY
+    name VARCHAR(30) CHARACTER SET utf8 NOT NULL PRIMARY KEY,
+    last_date_modified TIMESTAMP
 );
 CREATE OR REPLACE TABLE cost(
     id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -28,20 +29,23 @@ CREATE OR REPLACE TABLE unit(
     level INTEGER,
     upgraded BOOLEAN,
     cost_id INTEGER,
-    CONSTRAINT unit_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name),
+    last_date_modified TIMESTAMP,
+    CONSTRAINT unit_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name) ON UPDATE CASCADE,
     CONSTRAINT unit_fk_cost FOREIGN KEY (cost_id) REFERENCES cost (id)
 );
 CREATE OR REPLACE TABLE map(
     name VARCHAR(30) CHARACTER SET utf8 NOT NULL PRIMARY KEY,
-    size VARCHAR(5)
+    size VARCHAR(5),
+    last_date_modified TIMESTAMP
 );
 CREATE OR REPLACE TABLE building(
     name VARCHAR(30) CHARACTER SET utf8 NOT NULL,
     castle_name VARCHAR(30) CHARACTER SET utf8 NOT NULL,
     level INTEGER,
     cost_id INTEGER,
+    last_date_modified TIMESTAMP,
     PRIMARY KEY (name, castle_name),
-    CONSTRAINT building_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name),
+    CONSTRAINT building_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name) ON UPDATE CASCADE,
     CONSTRAINT building_fk_cost FOREIGN KEY (cost_id) REFERENCES cost (id)
 );
 CREATE OR REPLACE TABLE requirement(
@@ -49,31 +53,36 @@ CREATE OR REPLACE TABLE requirement(
     castle_name VARCHAR(30) CHARACTER SET utf8 NOT NULL,
     requirement_name VARCHAR(30) CHARACTER SET utf8 NOT NULL,
     PRIMARY KEY (building_name, castle_name, requirement_name),
-    CONSTRAINT requirement_fk_building FOREIGN KEY (building_name) REFERENCES building (name) ON DELETE CASCADE,
-    CONSTRAINT requirement_fk_building_2 FOREIGN KEY (requirement_name) REFERENCES building (name) ON DELETE CASCADE,
-    CONSTRAINT requirement_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name) ON DELETE CASCADE
+    CONSTRAINT requirement_fk_building FOREIGN KEY (building_name) REFERENCES building (name) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT requirement_fk_building_2 FOREIGN KEY (requirement_name) REFERENCES building (name) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT requirement_fk_castle FOREIGN KEY (castle_name) REFERENCES castle (name) ON DELETE CASCADE ON UPDATE CASCADE
 );
 -- TODO: dodać castle_name do graczaa
 -- TODO: dodać tabelkę pomocniczą player_unit (wiążę gracza z jego jednostakami)
 -- TODO: dodać tabelkę pomocniczą player_building (wiążę gracza z jego budynkami)
 CREATE OR REPLACE TABLE player(
-    name VARCHAR(30) CHARACTER SET utf8 NOT NULL PRIMARY KEY
+    name VARCHAR(30) CHARACTER SET utf8 NOT NULL PRIMARY KEY,
+    last_date_modified TIMESTAMP
 );
 CREATE OR REPLACE TABLE token(
     token CHAR(20) NOT NULL PRIMARY KEY
 );
 -- TODO: dodać mapę do gry
 CREATE OR REPLACE TABLE game(
-    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT
+    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(30),
+    last_date_modified TIMESTAMP
 );
 CREATE OR REPLACE TABLE game_player(
     game_id INTEGER NOT NULL,
     player_name VARCHAR(30) CHARACTER SET utf8 NOT NULL,
     PRIMARY KEY (game_id, player_name),
     CONSTRAINT game_player_game_fk FOREIGN KEY (game_id) REFERENCES game (id),
-    CONSTRAINT game_player_player_fk FOREIGN KEY (player_name) REFERENCES player (name)
+    CONSTRAINT game_player_player_fk FOREIGN KEY (player_name) REFERENCES player (name) ON UPDATE CASCADE
 );
+
 DELIMITER //
+
 CREATE OR REPLACE FUNCTION set_cost(goldIn INTEGER,
     woodIn INTEGER,
     oreIn INTEGER,
@@ -99,7 +108,10 @@ BEGIN
          NULLIF(sulfurIn,0),NULLIF(crystalIn,0),NULLIF(gemsIn,0));
         RETURN LAST_INSERT_ID();
     END IF;
-END;
+END
+
+//
+
 DELIMITER ;
 
 INSERT INTO castle(name) VALUES ('Zamek'),('Inferno'),('Forteca'),('Twierdza'),('Bastion'),('Wrota Żywiołów'),('Nekropolia'),('Loch'),('Cytadela');

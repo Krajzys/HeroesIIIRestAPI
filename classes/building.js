@@ -11,13 +11,15 @@ class Building {
         castle_name = '',
         level = 0,
         cost = new Cost(),
-        requirements = []
+        requirements = [],
+        last_date_modified = new Date()
     }={}) {
         this.name = name
         this.castle_name = castle_name
         this.level = level
-        this.cost = new Cost(cost)
+        this.cost = cost
         this.requirements = requirements
+        this.last_date_modified = last_date_modified
     }
 }
 
