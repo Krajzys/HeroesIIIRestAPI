@@ -6,6 +6,7 @@ const select_castle = db.select_castle
 const delete_castle = db.delete_castle
 const update_castle = db.update_castle
 const extend = require('lodash/extend')
+const Unit = require('../classes/unit')
 appCastles = express()
 
 // TODO: rozbudować żeby przechowywało dane o jednostkach i budynkach (plus można było updateować)
@@ -44,12 +45,8 @@ appCastles.route('/').post((req, res) => {
 
 appCastles.route('/:cid').put((req, res) => {
     let {requirements, ...castle} = new Castle(req.body)
-    if (Object.getOwnPropertyNames(req.body) !== Object.getOwnPropertyNames(new Castle())) {
-        res.status(400)
-        res.send('To perform full update (PUT request) you must specify all of the resource fields')
-        return
-    }
-    update_castle(castle).then((rows) => {
+    let old_castle = new Castle({name: req.params.cid})
+    update_castle(castle, old_castle).then((rows) => {
         res.status(200)
         res.send(rows)
     }).catch((err)=> {
@@ -102,6 +99,84 @@ appCastles.route('/:cid').delete((req, res) => {
             res.status(500)
             res.send(err.message)
         })
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
+})
+
+appCastles.route('/:cid/units').get((req, res) => {
+    let castle = new Castle({name: req.params.cid})
+    select_castle(castle).then((rows) => {
+        let unit = new Unit()
+        req.query.castle = rows[0].name
+        db.select_unit(unit, req.query).then((rows) => {
+            res.status(200)
+            res.send(rows)
+        })
+    }).catch((err) => {
+        res.status(500)
+        res.send(err.message)
+    })
+})
+
+appCastles.route('/:cid/units').post((req, res) => {
+    let units = req.body.units
+    let ok_count = 0
+    db.con.beginTransaction()
+    for (let i = 0; i < units.length; i++) {
+        db.insert_unit([units[i]]).then((rows) => {
+            ok_count += 1
+            if (ok_count === units.length) {
+                db.con.commit()
+                res.status(200)
+                res.json(units)
+            }
+        }).catch((err) => {
+            db.con.rollback()
+            res.status(500)
+            res.send(err.message)
+        })
+    }
+})
+
+appCastles.route('/:cid/units').put((req, res) => {
+    let units = req.body.units
+    let ok_count = 0
+    db.con.beginTransaction()
+    db.select_unit(new Unit(), {castle: req.params.cid}).then((rows) => {
+        let unit_names = []
+        rows.forEach((element) => {
+            unit_names.push(element.name)
+        })
+        db.delete_units(unit_names, req.params.cid).then((_rows) => {
+            for (let i = 0; i < units.length; i++) {
+                db.insert_unit([units[i]]).then((__rows) => {
+                    ok_count += 1
+                    if (ok_count === units.length) {
+                        db.con.commit()
+                        res.status(200)
+                        res.json(units)
+                    }
+                }).catch((err) => {
+                    db.con.rollback()
+                    res.status(500)
+                    res.send(err.message)
+                })
+            }
+        })
+    }).catch((err) => {
+        db.con.rollback()
+        res.status(500)
+        res.send(err.message)
+    })
+})
+
+appCastles.route('/:cid/units').delete((req, res) => {
+    let names = req.body.names
+    db.delete_units(names, req.params.cid).then((rows) => {
+        res.status(200)
+        res.send(rows)
     }).catch((err) => {
         res.status(500)
         res.send(err.message)

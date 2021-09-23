@@ -42,12 +42,8 @@ appPlayers.route('/').post((req, res) => {
 
 appPlayers.route('/:pid').put((req, res) => {
     let {requirements, ...player} = new Player(req.body)
-    if (Object.getOwnPropertyNames(req.body) !== Object.getOwnPropertyNames(new Player())) {
-        res.status(400)
-        res.send('To perform full update (PUT request) you must specify all of the resource fields')
-        return
-    }
-    update_player(player, new Player({name: req.params.pid})).then((rows) => {
+    let old_player = new Player({name: req.params.name})
+    update_player(player, old_player).then((rows) => {
         res.status(200)
         res.send(rows)
     }).catch((err)=> {

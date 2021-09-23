@@ -42,12 +42,8 @@ appUnits.route('/').post((req, res) => {
 
 appUnits.route('/:uid').put((req, res) => {
     let {requirements, ...unit} = new Unit(req.body)
-    if (Object.getOwnPropertyNames(req.body) !== Object.getOwnPropertyNames(new Unit())) {
-        res.status(400)
-        res.send('To perform full update (PUT request) you must specify all of the resource fields')
-        return
-    }
-    update_unit(unit).then((rows) => {
+    let old_unit = new Unit({name: req.params.uid})
+    update_unit(unit, old_unit).then((rows) => {
         res.status(200)
         res.send(rows)
     }).catch((err)=> {

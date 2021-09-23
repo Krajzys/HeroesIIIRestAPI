@@ -105,8 +105,8 @@ function insert_game(values) {
 
     return new Promise(function(resolve, reject) {
             con.query(queryString, [valuesAsList], function (err, result, fields) {
-            if (err) reject(err)
-            resolve (result)
+                if (err) reject(err)
+                resolve (result)
         })
     })
 }
@@ -194,10 +194,10 @@ function select_building(filters = new Building(), query = {}) {
         queryString += ` WHERE b.name = '${filters.name}' AND b.castle_name = '${filters.castle_name}'`
     }
     queryString += ` GROUP BY name`
-    if (query.limit > 0) {
+    if (parseInt(query.limit) > 0) {
         queryString += ` LIMIT ${query.limit}`
     }
-    if (query.offset > 0) {
+    if (parseInt(query.offset) > 0) {
         queryString += ` OFFSET ${query.offset}`
     }
     return new Promise (function(resolve, reject) {
@@ -233,10 +233,10 @@ function select_castle(filters = new Castle(), query = {}) {
     if (filters.name !== '') {
         queryString += ` WHERE name = '${filters.name}'`
     }
-    if (query.limit > 0) {
+    if (parseInt(query.limit) > 0) {
         queryString += ` LIMIT ${query.limit}`
     }
-    if (query.offset > 0) {
+    if (parseInt(query.offset) > 0) {
         queryString += ` OFFSET ${query.offset}`
     }
     return new Promise (function(resolve, reject) {
@@ -260,10 +260,10 @@ function select_game(filters = new Game(), query = {}) {
     if (filters.id !== '') {
         queryString += ` WHERE id = '${filters.id}'`
     }
-    if (query.limit > 0) {
+    if (parseInt(query.limit) > 0) {
         queryString += ` LIMIT ${query.limit}`
     }
-    if (query.offset > 0) {
+    if (parseInt(query.offset) > 0) {
         queryString += ` OFFSET ${query.offset}`
     }
     return new Promise (function(resolve, reject) {
@@ -288,10 +288,10 @@ function select_map(filters = new Map(), query = {}) {
     if (filters.name !== '') {
         queryString += ` WHERE name = '${filters.name}'`
     }
-    if (query.limit > 0) {
+    if (parseInt(query.limit) > 0) {
         queryString += ` LIMIT ${query.limit}`
     }
-    if (query.offset > 0) {
+    if (parseInt(query.offset) > 0) {
         queryString += ` OFFSET ${query.offset}`
     }
     return new Promise (function(resolve, reject) {
@@ -316,10 +316,10 @@ function select_player(filters = new Player(), query = {}) {
     if (filters.name !== '') {
         queryString += ` WHERE name = '${filters.name}'`
     }
-    if (query.limit > 0) {
+    if (parseInt(query.limit) > 0) {
         queryString += ` LIMIT ${query.limit}`
     }
-    if (query.offset > 0) {
+    if (parseInt(query.offset) > 0) {
         queryString += ` OFFSET ${query.offset}`
     }
     return new Promise (function(resolve, reject) {
@@ -352,11 +352,18 @@ function select_unit(filters = new Unit(), query = {}) {
     let queryString = `SELECT * FROM unit JOIN cost ON (cost_id = id)`
     if (filters.name !== '') {
         queryString += ` WHERE name = '${filters.name}'`
+        if (query.castle) {
+            queryString += ` AND castle_name = '${query.castle}'`
+        }
     }
-    if (query.limit > 0) {
+    else if (query.castle) {
+        queryString += ` WHERE castle_name = '${query.castle}'`
+    }
+    
+    if (parseInt(query.limit) > 0) {
         queryString += ` LIMIT ${query.limit}`
     }
-    if (query.offset > 0) {
+    if (parseInt(query.offset) > 0) {
         queryString += ` OFFSET ${query.offset}`
     }
     return new Promise (function(resolve, reject) {
@@ -451,6 +458,26 @@ function delete_unit(unit = new Unit()) {
     let queryString = `DELETE FROM unit WHERE name = ?`
     return new Promise(function(resolve, reject) {
         con.query(queryString, [unit.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function delete_unit(unit = new Unit()) {
+    let queryString = `DELETE FROM unit WHERE name = ?`
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [unit.name], function(err, rows, fields) {
+            if (err) reject(err)
+            resolve(rows)
+        })
+    })
+}
+
+function delete_units(units = [], castle_name = '') {
+    let queryString = `DELETE FROM unit WHERE name IN (?) AND castle_name = ?`
+    return new Promise(function(resolve, reject) {
+        con.query(queryString, [units, castle_name], function(err, rows, fields) {
             if (err) reject(err)
             resolve(rows)
         })
@@ -565,6 +592,7 @@ exports.delete_map = delete_map
 exports.delete_player = delete_player
 exports.delete_token = delete_token
 exports.delete_unit = delete_unit
+exports.delete_units = delete_units
 
 exports.update_building = update_building
 exports.update_castle = update_castle

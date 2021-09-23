@@ -42,12 +42,8 @@ appMaps.route('/').post((req, res) => {
 
 appMaps.route('/:mid').put((req, res) => {
     let {requirements, ...map} = new Map(req.body)
-    if (Object.getOwnPropertyNames(req.body) !== Object.getOwnPropertyNames(new Map())) {
-        res.status(400)
-        res.send('To perform full update (PUT request) you must specify all of the resource fields')
-        return
-    }
-    update_map(map).then((rows) => {
+    let old_map = new Map({name: req.params.mid})
+    update_map(map, old_map).then((rows) => {
         res.status(200)
         res.send(rows)
     }).catch((err)=> {

@@ -32,16 +32,17 @@ appGames.route('/:gid').get((req, res) => {
 })
 
 appGames.route('/').post((req, res) => {
-    let token = new Token(req.body)
+    let token = new Token({token: req.body.token})
+    let values = new Game({name: req.body.name})
     delete_token(token).then((rows) => {
         if (rows.affectedRows === 0) {
             res.status(404)
             res.send('Entered token is invalid')
             return
         }
-        insert_game([]).then((rows) => {
+        insert_game([values]).then((rows) => {
             res.status(200)
-            let game = new Game({id: rows.insertId})
+            let game = new Game({id: rows.insertId, name: values.name})
             res.json(game)
         }).catch((err)=> {
             res.status(500)
@@ -52,12 +53,8 @@ appGames.route('/').post((req, res) => {
 
 appGames.route('/:gid').put((req, res) => {
     let {requirements, ...game} = new Game(req.body)
-    if (Object.getOwnPropertyNames(req.body) !== Object.getOwnPropertyNames(new Game())) {
-        res.status(400)
-        res.send('To perform full update (PUT request) you must specify all of the resource fields')
-        return
-    }
-    update_game(game).then((rows) => {
+    let old_game = new Game({id: req.params.gid})
+    update_game(game, old_game).then((rows) => {
         res.status(200)
         res.send(rows)
     }).catch((err)=> {

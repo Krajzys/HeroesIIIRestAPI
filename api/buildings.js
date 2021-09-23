@@ -43,12 +43,8 @@ appBuildings.route('/').post((req, res) => {
 
 appBuildings.route('/:bid&:cid').put((req, res) => {
     let {requirements, ...building} = new Building(req.body)
-    if (Object.getOwnPropertyNames(req.body) !== Object.getOwnPropertyNames(new Building())) {
-        res.status(400)
-        res.send('To perform full update (PUT request) you must specify all of the resource fields')
-        return
-    }
-    update_building(building).then((rows) => {
+    let old_building = new Building({name: req.params.bid, castle_name: req.params.cid})
+    update_building(building, old_building).then((rows) => {
         res.status(200)
         res.send(rows)
     }).catch((err)=> {
